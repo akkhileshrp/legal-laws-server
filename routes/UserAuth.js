@@ -1,10 +1,51 @@
 const express = require('express');
 const UserSchema = require('../models/userSchema');
+const VerificationSchema = require('../models/verificationModel');
 const ErrorHandler = require('../middleware/errorMiddleware');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
+const generateSecureRandomNumber = require('../otp/randomNummber');
 const router = express.Router();
 require('dotenv').config();
+
+let transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    post: 587,
+    secure: false,
+    requireTLS: true,
+    auth: {
+        user: process.env.COMPANY_EMAIL,
+        pass: process.env.NODEMAILER_AUTH,
+    }
+});
+
+router.post('/send-otp', async (req, res, next) => {
+    const { email } = req.body;
+    const user = await UserSchema.findOne({ email: email });
+    if (!user) {
+        return res.status(404).send({ message: 'User not found' });
+    }
+    const OTP = generateSecureRandomNumber(1000, 9999);
+    try {
+        const mailOptions = {
+            from: process.env.COMPANY_EMAIL,
+            to: email,
+            subject: 'OTP Verification for SREC Legal Laws App',
+            text: `Your OTP verification is: ${OTP}`
+        };
+        transporter.sendMail(mailOptions, async (err, info) => {
+            if (!err) {
+                return res.status(200).send({ message: 'OTP sent to your mail successfully. Check both your inbox and spam' });
+            } else {
+                res.status(500).send({ message: 'Internal Server Error' });
+            }
+        })
+    } catch (error) {
+        next(error);
+    }
+});
+
 
 router.post("/register", async (req, res, next) => {
     try {
@@ -38,18 +79,6 @@ router.post("/login", async (req, res, next) => {
         const authToken = jwt.sign({ userId: user._id }, process.env.AUTH_SECRET, { expiresIn: "20m" });
         res.cookie("authToken", authToken, { httpOnly: true });
         res.status(200).send({ message: "Login successful", token: authToken });
-    } catch (error) {
-        next(error);
-    }
-});
-
-router.post("/forgot-password", async (req, res, next) => {
-    try {
-        const { email } = req.body;
-        const user = await UserSchema.findOne({ email: email });
-        if (!user) {
-            res.status(404).send({ message: "User not found" });
-        }
     } catch (error) {
         next(error);
     }
