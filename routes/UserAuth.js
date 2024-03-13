@@ -26,21 +26,34 @@ router.post('/send-otp', async (req, res, next) => {
     if (!user) {
         return res.status(404).send({ message: 'User not found' });
     }
-    const OTP = generateSecureRandomNumber(1000, 9999);
+    const OTP = generateSecureRandomNumber(10000, 99999);
     try {
         const mailOptions = {
             from: process.env.COMPANY_EMAIL,
             to: email,
             subject: 'OTP Verification for SREC Legal Laws App',
-            text: `Your OTP verification is: ${OTP}`
+            html: `
+                <div style="background-color: #f4f4f4; padding: 20px; font-family: Arial, sans-serif;">
+                    <div style="background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);">
+                        <h2 style="color: #333;">OTP Verification for SREC Legal Laws App</h2>
+                        <p style="color: #555;">Dear User,</p>
+                        <p style="color: #555;">Your OTP verification code is: <strong>${OTP}</strong></p>
+                        <p style="color: #555;">Please use this code to complete the verification process.</p>
+                        <p style="color: #555;">If you did not request this OTP, please ignore this email.</p>
+                        <p style="color: #555;">Best Regards,<br/>Sri Ramakrishna Engineering College</p>
+                    </div>
+                </div>
+            `
         };
+        const verification = new VerificationSchema({ email: email, code: OTP })
+        verification.save();
         transporter.sendMail(mailOptions, async (err, info) => {
             if (!err) {
                 return res.status(200).send({ message: 'OTP sent to your mail successfully. Check both your inbox and spam' });
             } else {
                 res.status(500).send({ message: 'Internal Server Error' });
             }
-        })
+        });
     } catch (error) {
         next(error);
     }
