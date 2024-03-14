@@ -22,10 +22,6 @@ let transporter = nodemailer.createTransport({
 
 router.post('/send-otp', async (req, res, next) => {
     const { email } = req.body;
-    const user = await UserSchema.findOne({ email: email });
-    if (!user) {
-        return res.status(404).send({ message: 'User not found' });
-    }
     const OTP = generateSecureRandomNumber(10000, 99999);
     try {
         const mailOptions = {
@@ -62,15 +58,26 @@ router.post('/send-otp', async (req, res, next) => {
 
 router.post("/register", async (req, res, next) => {
     try {
-        const { firstName, lastName, email, phoneNumber, password } = req.body;
+        const { firstName, lastName, email, phoneNumber, password, otp } = req.body;
         const existingUser = await UserSchema.findOne({ email: email });
         if (existingUser) {
             res.status(409).send({ message: "E-Mail already exists" });
             return;
         }
-        const newUser = new UserSchema({ firstName, lastName, email, phoneNumber, password });
-        await newUser.save();
-        res.status(201).send({ message: "User registered successfully" });
+        const verificationQuery = await VerificationSchema.findOne({ email: email });
+        if (!verificationQuery) {
+            res.status(400).send({ message: 'Please send the OTP first' });
+        }
+        const otpMatch = await bcrypt.compare(otp, verificationQuery.code);
+        if (otpMatch) {
+            const newUser = new UserSchema({ firstName, lastName, email, phoneNumber, password });
+            await newUser.save();
+            await VerificationSchema.deleteOne({ email: email });
+            res.status(201).send({ message: "User registered successfully" });
+            return;
+        } else {
+            res.status(400).send({ message: 'Invalid OTP code' });
+        }
     } catch (error) {
         next(error);
     }
