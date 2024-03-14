@@ -104,6 +104,32 @@ router.post("/login", async (req, res, next) => {
     }
 });
 
+router.post('/reset-password', async (req, res, next) => {
+    try {
+        const { email, password, otp } = req.body;
+        const user = await UserSchema.findOne({ email: email });
+        const verificationQuery = await VerificationSchema.findOne({ email: email });
+        if (!user) {
+            res.status(404).send({ message: 'User not found' });
+        }
+        if (!verificationQuery) {
+            res.status(400).send({ message: 'Please send the OTP first' });
+        }
+        const isMatch = await bcrypt.compare(otp, verificationQuery.code);
+        if (isMatch) {
+            user.password = password;
+            await user.save();
+            await VerificationSchema.deleteOne({ email: email });
+            res.status(201).send({ message: 'Password changed successfully' });
+            return;
+        } else {
+            res.status(400).send({ message: 'Invalid OTP code' });
+        }
+    } catch (error) {
+        next(error);
+    }
+});
+
 router.use(ErrorHandler);
 
 module.exports = router;
