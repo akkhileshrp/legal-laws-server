@@ -7,8 +7,8 @@ require('dotenv').config();
 const app = express();
 const userAuth = require('./routes/UserAuth');
 
+app.use(cors());
 app.use(express.json());
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 app.use(cookieParser());
 app.use('/auth', userAuth);
 
