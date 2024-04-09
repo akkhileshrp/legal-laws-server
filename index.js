@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
-
 const app = express();
 const userAuth = require('./routes/UserAuth');
 
