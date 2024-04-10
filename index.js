@@ -5,11 +5,13 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const app = express();
 const userAuth = require('./routes/UserAuth');
+const lawsandregulations = require("./routes/LawsRoute");
 
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
-app.use('/auth', userAuth);
+app.use("/auth", userAuth);
+app.use("/lawsandregulations", lawsandregulations);
 
 mongoose.connect(process.env.MONGO_URL)
     .then(() => console.log("Database connection established successfully"))
