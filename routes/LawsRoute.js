@@ -88,13 +88,7 @@ router.get("/healthlaws", async (req, res, next) => {
 router.get("/healthlaws/:section_title", async (req, res, next) => {
     try {
         const regex = new RegExp(req.params.section_title, "i");
-        const data = await HealthLaws.find({
-            "sections": {
-                $elemMatch: {
-                    "section_title": { $regex: regex }
-                }
-            }
-        });
+        const data = await HealthLaws.find({ section_title: { $regex: regex } });
         return res.status(200).send({ length: data.length, data: data });
     } catch (error) {
         console.error("Error:", error);
